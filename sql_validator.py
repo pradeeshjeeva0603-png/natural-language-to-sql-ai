@@ -23,3 +23,4 @@ def validate_sql(sql):
             return False, f"Forbidden SQL operation detected: {keyword}"
 
     return True, "SQL is valid."
+
