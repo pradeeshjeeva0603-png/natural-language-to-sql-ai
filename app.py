@@ -1,6 +1,7 @@
 from ollama import chat
 from database import get_connection
 from schema import DATABASE_SCHEMA
+from sql_validator import validate_sql
 
 
 def generate_sql(question):
@@ -95,6 +96,15 @@ def main():
 
     print("Generated SQL:")
     print(sql)
+
+    is_valid, message = validate_sql(sql)
+
+    print("\nSQL Validation:")
+    print(message)
+
+    if not is_valid:
+        print("\nQuery rejected for safety.")
+        return
 
     print("\nExecuting SQL...")
 
