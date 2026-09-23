@@ -1,17 +1,18 @@
 from ollama import chat
 from database import get_connection
-from schema import DATABASE_SCHEMA
+from schema_retriever import retrieve_schema
 from sql_validator import validate_sql
 
 
 def generate_sql(question):
+    relevant_schema = retrieve_schema(question)
     prompt = f"""
     You are a MySQL Text-to-SQL assistant.
 
     Your job is to convert a natural language question into ONE correct MySQL SELECT query.
 
-    DATABASE SCHEMA:
-    {DATABASE_SCHEMA}
+    RELEVANT DATABASE SCHEMA:
+    {retrieve_schema(question)}
 
     IMPORTANT RULES:
     1. Use ONLY tables and columns that exist in the schema.
