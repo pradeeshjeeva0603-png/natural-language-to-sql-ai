@@ -88,5 +88,22 @@ Columns:
 """
 }
 
-
 DATABASE_SCHEMA = "\n".join(SCHEMA_DOCUMENTS.values())
+
+JOIN_RELATIONSHIPS = """
+VALID TABLE RELATIONSHIPS:
+
+employees.JOB_ID = jobs.JOB_ID
+employees.DEPARTMENT_ID = departments.department_id
+employees.MANAGER_ID = employees.EMPLOYEE_ID
+
+departments.location_id = locations.LOCATION_ID
+departments.manager_id = employees.EMPLOYEE_ID
+
+locations.COUNTRY_ID = countries.COUNTRY_ID
+countries.REGION_ID = regions.REGION_ID
+
+job_history.EMPLOYEE_ID = employees.EMPLOYEE_ID
+job_history.JOB_ID = jobs.JOB_ID
+job_history.DEPARTMENT_ID = departments.department_id
+"""
