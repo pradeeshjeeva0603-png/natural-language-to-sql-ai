@@ -24,21 +24,17 @@ schema_embeddings = model.encode(schema_documents)
 def expand_related_tables(table_names):
     expanded_tables = set(table_names)
 
-    if "employees" in table_names:
-        expanded_tables.add("jobs")
+    if "employees" in table_names and "locations" in table_names:
         expanded_tables.add("departments")
 
-    if "departments" in table_names:
+    if "departments" in table_names and "countries" in table_names:
         expanded_tables.add("locations")
 
-
-
-    if "countries" in table_names:
+    if "countries" in table_names and "regions" in table_names:
         expanded_tables.add("regions")
 
     if "job_history" in table_names:
         expanded_tables.add("employees")
-        expanded_tables.add("jobs")
         expanded_tables.add("departments")
 
     return expanded_tables

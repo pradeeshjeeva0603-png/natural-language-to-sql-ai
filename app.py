@@ -52,9 +52,11 @@ IMPORTANT RULES:
 10. Do NOT use job_history unless the question specifically asks about employment history, previous jobs, past jobs, or past departments.
 11. Do NOT join locations, countries, or regions unless the question requires location, city, country, or region information.
 12. Never invent tables, columns, or relationships.
-13. Return ONLY the SQL query.
-14. Do not use markdown.
-15. Do not explain the answer.
+13. Use ONLY tables and columns explicitly present in the RELEVANT DATABASE SCHEMA.
+14. Do NOT use tables or columns merely because they appear in VALID JOIN RELATIONSHIPS.
+15. Return ONLY the SQL query.
+16. Do not use markdown.
+17. Do not explain the answer.
 
 EXAMPLES:
 
@@ -126,19 +128,71 @@ SQL:
         ]
     )
 
-    return response["message"]["content"].strip()
+    return response["message"]["content"].strip(), relevant_schema
 
 def execute_sql(sql):
     connection = get_connection()
     cursor = connection.cursor()
 
-    cursor.execute(sql)
-    results = cursor.fetchall()
+    try:
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        return results, None
 
-    cursor.close()
-    connection.close()
+    except Exception as e:
+        return None, str(e)
 
-    return results
+    finally:
+        cursor.close()
+        connection.close()
+
+def fix_sql(sql, error, question, relevant_schema):
+    prompt = f"""
+You are an expert MySQL SQL debugger.
+
+Your task is to generate a completely NEW SQL query that correctly answers the original user's question.
+
+ORIGINAL USER QUESTION:
+{question}
+
+RELEVANT DATABASE SCHEMA:
+{relevant_schema}
+
+PREVIOUS FAILED SQL:
+{sql}
+
+MYSQL ERROR:
+{error}
+
+IMPORTANT RULES:
+1. Ignore the previous SQL and generate the query from scratch.
+2. Answer ONLY the original user's question.
+3. Use ONLY tables and columns that exist in the provided schema.
+4. Use the minimum number of tables required to answer the question.
+5. Join a table only when its columns or data are required by the question.
+6. Do not add unnecessary columns to the SELECT clause.
+7. Do not add unnecessary JOINs or WHERE conditions.
+8. Do not invent tables, columns, or relationships.
+9. Follow the valid JOIN relationships provided in the schema.
+10. If multiple tables are required, use the shortest valid JOIN path.
+11. Preserve the meaning and intent of the original question.
+12. Return ONLY one valid MySQL SELECT query.
+13. Use ONLY tables and columns explicitly present in the RELEVANT DATABASE SCHEMA.
+14. Do NOT use tables or columns merely because they appear in VALID JOIN RELATIONSHIPS.
+15. Do not use markdown.
+16. Do not explain the answer.
+
+Generate the corrected SQL query now:
+"""
+
+    response = chat(
+        model="mohamedelawakey/sql_coder",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return response["message"]["content"].strip()
 
 
 def main():
@@ -150,7 +204,7 @@ def main():
 
     print("\nGenerating SQL...\n")
 
-    sql = generate_sql(question)
+    sql, relevant_schema = generate_sql(question)
 
     print("Generated SQL:")
     print(sql)
@@ -167,7 +221,34 @@ def main():
 
     print("\nExecuting SQL...")
 
-    results = execute_sql(sql)
+    results, error = execute_sql(sql)
+
+    if error:
+        print("\nSQL Execution Error:")
+        print(error)
+
+        print("\nAttempting to fix SQL...")
+
+        fixed_sql = fix_sql(sql, error, question, relevant_schema)
+
+        print("\nFixed SQL:")
+        print(fixed_sql)
+
+        valid, message = validate_sql(fixed_sql)
+
+        if not valid:
+            print("\nFixed SQL Validation Error:")
+            print(message)
+            return
+
+        print("\nExecuting fixed SQL...")
+
+        results, error = execute_sql(fixed_sql)
+
+        if error:
+            print("\nFixed SQL Execution Error:")
+            print(error)
+            return
 
     print("\nResults:")
     for row in results:
