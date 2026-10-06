@@ -24,15 +24,19 @@ schema_embeddings = model.encode(schema_documents)
 def expand_related_tables(table_names):
     expanded_tables = set(table_names)
 
+    # Employees + Locations need Departments as the bridge
     if "employees" in table_names and "locations" in table_names:
         expanded_tables.add("departments")
 
+    # Departments + Countries need Locations as the bridge
     if "departments" in table_names and "countries" in table_names:
         expanded_tables.add("locations")
 
+    # Countries + Regions already have a direct relationship
     if "countries" in table_names and "regions" in table_names:
         expanded_tables.add("regions")
 
+    # Job history needs Employees and Departments for related information
     if "job_history" in table_names:
         expanded_tables.add("employees")
         expanded_tables.add("departments")

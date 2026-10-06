@@ -145,8 +145,38 @@ def execute_sql(sql):
     finally:
         cursor.close()
         connection.close()
+def generate_answer(question, results):
+    prompt = f"""
+You are an AI database assistant.
 
-def fix_sql(sql, error, question, relevant_schema):
+Answer the user's question using ONLY the database results provided below.
+
+USER QUESTION:
+{question}
+
+DATABASE RESULTS:
+{results}
+
+RULES:
+1. Answer the user's original question directly.
+2. Use only information present in the database results.
+3. Do not invent or assume any information.
+4. Do not mention SQL, tables, queries, schemas, or database errors.
+5. If there are many rows, summarize them instead of listing every row.
+6. Keep the answer concise and easy to understand.
+7. Return only the natural-language answer.
+"""
+
+    response = chat(
+        model="mohamedelawakey/sql_coder",
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    return response["message"]["content"].strip()
+
+def fix_sql(sql, error, question, relevant_schema, join_relationships):
     prompt = f"""
 You are an expert MySQL SQL debugger.
 
@@ -157,6 +187,9 @@ ORIGINAL USER QUESTION:
 
 RELEVANT DATABASE SCHEMA:
 {relevant_schema}
+
+VALID JOIN RELATIONSHIPS:
+{join_relationships}
 
 PREVIOUS FAILED SQL:
 {sql}
@@ -181,6 +214,8 @@ IMPORTANT RULES:
 14. Do NOT use tables or columns merely because they appear in VALID JOIN RELATIONSHIPS.
 15. Do not use markdown.
 16. Do not explain the answer.
+17. Every JOIN condition MUST exactly follow one of the VALID JOIN RELATIONSHIPS provided above.
+18. NEVER create a JOIN condition using columns that are not connected by a VALID JOIN RELATIONSHIP.
 
 Generate the corrected SQL query now:
 """
@@ -229,7 +264,7 @@ def main():
 
         print("\nAttempting to fix SQL...")
 
-        fixed_sql = fix_sql(sql, error, question, relevant_schema)
+        fixed_sql = fix_sql(sql, error, question, relevant_schema, JOIN_RELATIONSHIPS)
 
         print("\nFixed SQL:")
         print(fixed_sql)
@@ -253,6 +288,9 @@ def main():
     print("\nResults:")
     for row in results:
         print(row)
+    print("\nAI Answer:")
+    answer = generate_answer(question, results)
+    print(answer)
 
 
 if __name__ == "__main__":
