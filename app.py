@@ -36,27 +36,64 @@ VALID JOIN RELATIONSHIPS:
 
 IMPORTANT RULES:
 
-1. Use ONLY tables and columns that appear in the RELEVANT DATABASE SCHEMA above.
-2. NEVER use a table that is not present in the RELEVANT DATABASE SCHEMA.
-3. A foreign-key relationship shown in the schema does NOT mean you must join that table.
-4. Join a table ONLY when the user's question requires a column or filter from that table.
-5. Always use the shortest possible JOIN path needed to answer the question.
-6. Do NOT add extra tables just because they are related through foreign keys.
-7. Do NOT follow foreign-key relationships beyond what is required by the question.
-8. If the question asks for department names and cities, use only departments and locations.
-    8.1. If the user asks for cities, SELECT the CITY column, not LOCATION_ID.
-    8.2. If the user asks for department names and cities, the SELECT clause must contain DEPARTMENT_NAME and CITY.
-    8.3. Never SELECT a foreign key such as LOCATION_ID when the user asks for the information represented by that foreign key.
-    8.4. When two joined tables contain a column with the same name, always qualify the column with its table name.
-9. If the question asks for employees and job titles, use employees and jobs, plus departments only when department information is requested.
-10. Do NOT use job_history unless the question specifically asks about employment history, previous jobs, past jobs, or past departments.
-11. Do NOT join locations, countries, or regions unless the question requires location, city, country, or region information.
-12. Never invent tables, columns, or relationships.
-13. Use ONLY tables and columns explicitly present in the RELEVANT DATABASE SCHEMA.
-14. Do NOT use tables or columns merely because they appear in VALID JOIN RELATIONSHIPS.
-15. Return ONLY the SQL query.
-16. Do not use markdown.
-17. Do not explain the answer.
+1. Use ONLY tables and columns that appear in the RELEVANT DATABASE SCHEMA.
+2. NEVER use a table or column that is not present in the RELEVANT DATABASE SCHEMA.
+3. Determine exactly what information the user is asking for before generating SQL.
+4. Identify the MINIMUM number of tables required to answer the question.
+5. Use ONLY those required tables.
+6. Do NOT join a table merely because another table has a foreign key referencing it.
+7. A foreign-key relationship does NOT mean that the related table must be included.
+8. A VALID JOIN RELATIONSHIP may ONLY be used as an ON condition when both tables are actually required and joined.
+9. NEVER use a VALID JOIN RELATIONSHIP as a WHERE condition.
+10. If a table is not joined in the query, NONE of its columns may appear anywhere in the query.
+11. NEVER add a WHERE condition unless the condition is explicitly required by the user's question.
+12. NEVER invent filters based on foreign keys, manager relationships, departments, locations, countries, regions, or other schema information.
+13. Do NOT add unnecessary JOINs.
+14. Do NOT add unnecessary WHERE conditions.
+15. Do NOT add unnecessary SELECT columns.
+16. Do NOT invent tables, columns, relationships, conditions, or values.
+17. Every JOIN condition MUST exactly match one of the VALID JOIN RELATIONSHIPS.
+18. NEVER create a JOIN condition by guessing column names or matching similarly named columns.
+19. Use the shortest valid JOIN path required to answer the question.
+20. When a table is given an alias, ALWAYS use the alias when referring to its columns.
+    Never mix the original table name with its alias.
+21. If aliases are not necessary, you may avoid aliases entirely.
+22. When two tables contain a column with the same name, qualify the column using the table name or alias.
+23. If the question asks for information represented by a foreign key, use the referenced table's meaningful column instead of returning the foreign-key ID.
+24. If the question asks for department names and cities, use departments and locations only.
+    SELECT DEPARTMENT_NAME and CITY.
+25. If the question asks for employees and job titles, use employees and jobs.
+    Add departments only if department information is explicitly requested.
+26. Do NOT use locations, countries, or regions unless the question explicitly requires location, city, country, or region information.
+27. Do NOT use job_history unless the question asks about employment history, previous jobs, past jobs, or previous/past departments.
+
+PREVIOUS JOB / EMPLOYMENT HISTORY RULES:
+28. When the question asks for previous jobs, past jobs, or employment history, use job_history to identify historical job records.
+29. job_history.JOB_ID identifies the historical job.
+30. jobs.JOB_ID is the referenced job identifier.
+31. jobs.job_title contains the human-readable job title.
+32. When previous job titles are requested, connect:
+    job_history.JOB_ID = jobs.JOB_ID
+33. When previous job titles are requested, SELECT jobs.job_title rather than job_history.JOB_ID.
+34. If employee names are explicitly requested along with previous jobs, connect:
+    job_history.EMPLOYEE_ID = employees.EMPLOYEE_ID
+35. If the question only says "previous jobs of employees" and does NOT explicitly request employee names or employee attributes, do NOT automatically join employees.
+36. Do NOT add departments, locations, countries, or regions to a previous-jobs query unless explicitly requested.
+37. Do NOT add a WHERE condition to a previous-jobs query unless the user explicitly asks for filtering.
+
+OUTPUT RULES:
+38. Return ONLY one valid MySQL SELECT query.
+39. Do NOT use markdown.
+40. Do NOT explain the query.
+41. Do NOT include ```sql or ```.
+42. Do NOT generate multiple queries.
+43. Before generating SQL, mentally determine:
+    a. What information the user wants.
+    b. Which table contains that information.
+    c. Which additional tables are absolutely required.
+    d. Which valid JOIN relationships connect those tables.
+    e. Whether any WHERE condition is actually requested.
+44. The final query must contain ONLY the tables, columns, joins, and conditions necessary to answer the user's question.
 
 EXAMPLES:
 
@@ -145,30 +182,48 @@ def execute_sql(sql):
     finally:
         cursor.close()
         connection.close()
-def generate_answer(question, results):
-    prompt = f"""
-You are an AI database assistant.
 
-Answer the user's question using ONLY the database results provided below.
+def generate_answer(question, results):
+    formatted_results = "\n".join(
+        f"{i+1}. {row}"
+        for i, row in enumerate(results)
+    )
+
+    prompt = f"""
+You are a helpful AI database assistant.
+
+Answer the user's question using ONLY the database results provided.
 
 USER QUESTION:
 {question}
 
 DATABASE RESULTS:
-{results}
+{formatted_results}
 
-RULES:
-1. Answer the user's original question directly.
-2. Use only information present in the database results.
-3. Do not invent or assume any information.
-4. Do not mention SQL, tables, queries, schemas, or database errors.
-5. If there are many rows, summarize them instead of listing every row.
-6. Keep the answer concise and easy to understand.
-7. Return only the natural-language answer.
+IMPORTANT:
+- The database results are Python tuples.
+- A tuple such as (26,) means the value returned by the query is 26.
+- Do not interpret the number of tuples as the answer when the query is an aggregate such as COUNT, SUM, or AVG.
+- Use the actual values inside the tuples.
+- Do not write SQL.
+- Do not mention tables, queries, schemas, or Python.
+- Do not invent information.
+- Give a short, clear natural-language answer.
+- Preserve the exact order of the database results.
+- Do not sort, reorder, or rearrange the results.
+- When the results are already ordered, keep that order exactly.
+- Preserve the exact order of the database results.
+- The first result is result 1, the second is result 2, and so on.
+- Never reorder or sort the results yourself.
+- Use the database results exactly as provided.
+- Include all relevant values from every database result row that are needed to answer the user's question.
+- Do not omit columns or values that are part of the requested information.
+
+Return ONLY the answer.
 """
 
     response = chat(
-        model="mohamedelawakey/sql_coder",
+        model="llama3.2:3b",
         messages=[
             {"role": "user", "content": prompt}
         ]
@@ -197,25 +252,92 @@ PREVIOUS FAILED SQL:
 MYSQL ERROR:
 {error}
 
+CRITICAL INSTRUCTION:
+
+The PREVIOUS FAILED SQL is incorrect.
+
+DO NOT treat it as a template.
+
+DO NOT repair it.
+
+DO NOT copy its SELECT clause.
+
+DO NOT copy its JOINs.
+
+DO NOT copy its WHERE conditions.
+
+DO NOT copy its filters.
+
+DO NOT preserve its table choices unless they are independently required by the ORIGINAL USER QUESTION.
+
+Reconstruct the query completely from scratch using ONLY:
+
+1. The ORIGINAL USER QUESTION.
+2. The RELEVANT DATABASE SCHEMA.
+3. The VALID JOIN RELATIONSHIPS.
+
 IMPORTANT RULES:
-1. Ignore the previous SQL and generate the query from scratch.
-2. Answer ONLY the original user's question.
-3. Use ONLY tables and columns that exist in the provided schema.
-4. Use the minimum number of tables required to answer the question.
-5. Join a table only when its columns or data are required by the question.
-6. Do not add unnecessary columns to the SELECT clause.
-7. Do not add unnecessary JOINs or WHERE conditions.
-8. Do not invent tables, columns, or relationships.
-9. Follow the valid JOIN relationships provided in the schema.
-10. If multiple tables are required, use the shortest valid JOIN path.
-11. Preserve the meaning and intent of the original question.
-12. Return ONLY one valid MySQL SELECT query.
-13. Use ONLY tables and columns explicitly present in the RELEVANT DATABASE SCHEMA.
-14. Do NOT use tables or columns merely because they appear in VALID JOIN RELATIONSHIPS.
-15. Do not use markdown.
-16. Do not explain the answer.
-17. Every JOIN condition MUST exactly follow one of the VALID JOIN RELATIONSHIPS provided above.
-18. NEVER create a JOIN condition using columns that are not connected by a VALID JOIN RELATIONSHIP.
+
+1. Use ONLY tables and columns that exist in the RELEVANT DATABASE SCHEMA.
+2. NEVER use a table or column that does not exist in the RELEVANT DATABASE SCHEMA.
+3. Determine exactly what information the ORIGINAL USER QUESTION requests.
+4. Identify the MINIMUM number of tables required to answer the question.
+5. Use ONLY those required tables.
+6. Do NOT add a table merely because it is related through a foreign key.
+7. Do NOT add a table merely because it appears in VALID JOIN RELATIONSHIPS.
+8. A VALID JOIN RELATIONSHIP may ONLY be used as an ON condition when both tables are actually required and joined.
+9. NEVER use a VALID JOIN RELATIONSHIP as a WHERE condition.
+10. If a table is not joined in the query, NONE of its columns may appear anywhere in the query.
+11. NEVER add a WHERE condition unless it is explicitly required by the ORIGINAL USER QUESTION.
+12. NEVER invent filters based on foreign keys, manager relationships, departments, locations, countries, regions, or other schema information.
+13. Do NOT add unnecessary JOINs.
+14. Do NOT add unnecessary WHERE conditions.
+15. Do NOT add unnecessary SELECT columns.
+16. Do NOT invent tables, columns, relationships, conditions, or values.
+17. Every JOIN condition MUST exactly match one of the VALID JOIN RELATIONSHIPS.
+18. NEVER create a JOIN condition by guessing column names or matching similarly named columns.
+19. Use the shortest valid JOIN path required to answer the question.
+20. When a table is given an alias, ALWAYS use the alias when referring to its columns.
+    Never mix the original table name with its alias.
+21. If aliases are not necessary, you may avoid aliases entirely.
+22. When two tables contain a column with the same name, qualify the column using the table name or alias.
+23. If the question asks for information represented by a foreign key, use the referenced table's meaningful column instead of returning the foreign-key ID.
+24. Do NOT preserve any unnecessary clause from the PREVIOUS FAILED SQL.
+25. Every WHERE condition in the corrected query must be directly justified by the ORIGINAL USER QUESTION.
+
+PREVIOUS JOB / EMPLOYMENT HISTORY RULES:
+26. When the question asks for previous jobs, past jobs, or employment history, use job_history to identify historical job records.
+27. job_history.JOB_ID identifies the historical job.
+28. jobs.JOB_ID is the referenced job identifier.
+29. jobs.job_title contains the human-readable job title.
+30. When previous job titles are requested, connect:
+    job_history.JOB_ID = jobs.JOB_ID
+31. When previous job titles are requested, SELECT jobs.job_title rather than job_history.JOB_ID.
+32. If employee names are explicitly requested along with previous jobs, connect:
+    job_history.EMPLOYEE_ID = employees.EMPLOYEE_ID
+33. If the question only says "previous jobs of employees" and does NOT explicitly request employee names or employee attributes, do NOT automatically join employees.
+34. Do NOT add departments, locations, countries, or regions to a previous-jobs query unless explicitly requested.
+35. Do NOT add a WHERE condition to a previous-jobs query unless the user explicitly asks for filtering.
+
+FINAL CHECK BEFORE OUTPUT:
+Before returning the corrected SQL, verify all of the following:
+- Every table exists in the relevant schema.
+- Every column exists in the relevant schema.
+- Every JOIN condition exists in VALID JOIN RELATIONSHIPS.
+- No relationship is incorrectly used as a WHERE condition.
+- No unnecessary table is included.
+- No unnecessary WHERE condition is included.
+- No invented value is present.
+- No column is referenced using the wrong table alias.
+- The query directly answers the ORIGINAL USER QUESTION.
+- The query is a single MySQL SELECT query.
+
+OUTPUT RULES:
+36. Return ONLY one valid MySQL SELECT query.
+37. Do NOT use markdown.
+38. Do NOT explain the query.
+39. Do NOT include ```sql or ```.
+40. Do NOT generate multiple queries.
 
 Generate the corrected SQL query now:
 """
