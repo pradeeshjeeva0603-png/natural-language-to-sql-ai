@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Database Assistant</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body class="dashboard-page">
+
+    <div class="app-layout">
+
+        <!-- SIDEBAR -->
+
+        <aside class="sidebar">
+
+            <div class="sidebar-brand">
+                <div class="small-logo">✦</div>
+
+                <div>
+                    <h2>AI Database</h2>
+                    <p>Natural Language Assistant</p>
+                </div>
+            </div>
+
+            <button class="new-chat-button" id="newChatButton">
+                ＋ New Conversation
+            </button>
+
+            <div class="sidebar-section">
+                <p class="section-label">QUICK QUESTIONS</p>
+
+                <button class="quick-question"
+                    data-question="How many employees are there?">
+                    How many employees are there?
+                </button>
+
+                <button class="quick-question"
+                    data-question="Show the top 5 employees with the highest salaries.">
+                    Show the top 5 salaries
+                </button>
+
+                <button class="quick-question"
+                    data-question="Show the names of employees and their departments.">
+                    Employees and departments
+                </button>
+
+                <button class="quick-question"
+                    data-question="Show the names of departments and their cities.">
+                    Departments and cities
+                </button>
+            </div>
+
+            <div class="sidebar-bottom">
+
+                <div class="user-profile">
+                    <div class="avatar">A</div>
+
+                    <div class="user-details">
+                        <strong>{{ username }}</strong>
+                        <span>Database Assistant</span>
+                    </div>
+                </div>
+
+                <button class="logout-button" id="logoutButton">
+                    ↪ Sign Out
+                </button>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CONTENT -->
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    AI Assistant
+                </div>
+
+                <div class="topbar-label">
+                    Natural Language to SQL
+                </div>
+
+            </header>
+
+
+            <section class="workspace">
+
+                <div class="welcome-section" id="welcomeSection">
+
+                    <div class="welcome-icon">✦</div>
+
+                    <h1>Ask your database<br>anything.</h1>
+
+                    <p>
+                        Transform natural-language questions into SQL queries
+                        and discover insights from your data.
+                    </p>
+
+                </div>
+
+
+                <!-- CHAT MESSAGES -->
+
+                <div id="chatMessages" class="chat-messages"></div>
+
+
+                <!-- QUERY INPUT -->
+
+                <div class="input-container">
+
+                    <form id="queryForm">
+
+                        <textarea
+                            id="questionInput"
+                            placeholder="Ask something about your database..."
+                            rows="2"
+                            required
+                        ></textarea>
+
+                        <div class="input-footer">
+
+                            <span class="input-hint">
+                                Ask in natural language
+                            </span>
+
+                            <button
+                                type="submit"
+                                class="send-button"
+                                id="sendButton"
+                            >
+                                Generate Answer ↑
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+                <p class="disclaimer">
+                    AI-generated SQL may occasionally be incorrect.
+                    Queries are validated before execution.
+                </p>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+</body>
+</html>
